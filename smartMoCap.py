@@ -72,13 +72,15 @@ def calculate_angular_acceleration(initial_angular_velocity, final_angular_veloc
 
 
 # Open a video file
-video_path = r"C:\Users\lexie\Downloads\MEE460\TS1fl.mov"
+video_path = "./videos/TS1fl.mov" #davet - moved videos into project folder
 cap = cv2.VideoCapture(video_path)
 
 # Get video properties (width, height, frames per second)
-width = int(cap.get(4))
-height = int(cap.get(3))
-fps = cap.get(10)
+# davet - use enumerated values not magic constants
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+dt = 1/fps if fps else 1
 
 # Create a video writer to save the output
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -100,7 +102,7 @@ ankle_lin_velocities = []
 toe_lin_velocities = []   
 
 hip_ang_velocities = []   
-hip_knee_velocities = []  
+knee_ang_velocities = []  
 ankle_ang_velocities = []   
 
 hip_ang_accelerations = []  
@@ -142,13 +144,13 @@ while cap.isOpened():
         hip_landmark = landmarks[mp_pose.PoseLandmark.LEFT_HIP]
         shoulder_landmark = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
 
-# Calculate Segment Lengths 
+        # Calculate Segment Lengths 
         foot_magnitude = calculate_distance(toe_landmark, ankle_landmark)
         shank_magnitude = calculate_distance(knee_landmark, ankle_landmark)
         thigh_magnitude = calculate_distance(hip_landmark, knee_landmark)
         trunk_magnitude = calculate_distance(shoulder_landmark, hip_landmark)
         
-# Calculate Segment Angles 
+        # Calculate Segment Angles 
         ankle_angle = calculate_angle(knee_landmark, ankle_landmark, toe_landmark)
         knee_angle = calculate_angle(hip_landmark, knee_landmark, ankle_landmark) 
         hip_angle = calculate_angle(knee_landmark, hip_landmark, shoulder_landmark)
@@ -158,80 +160,77 @@ while cap.isOpened():
         knee_angles.append(knee_angle)
         ankle_angles.append(ankle_angle)
 
+        # davet - you weren't using the time_difference variable. Eliminated.
+        # davet - the fps is extracted from the video and doesn't need to be checked per frame
+        # davet - made a global dt that is always 1/fps or just 1 if fps == 0
+
         # Hip Data Collection
-        if prev_hip_landmark is not None:
-            if fps != 0:  # Check if fps is not zero to avoid division by zero
-                time_difference = 1 / fps
-            else:
-                time_difference = 1
-                
-            linear_velocity_hip = calculate_linear_velx(prev_hip_landmark.x, hip_landmark.x, 1 / fps) 
+        if prev_hip_landmark is not None:               
+            linear_velocity_hip = calculate_linear_velx(prev_hip_landmark.x, hip_landmark.x, dt) 
             hip_lin_velocities.append(linear_velocity_hip)
                 
-            angular_velocity_hip = calculate_angular_vel(prev_hip_angle, hip_angle, 1 / fps) 
+            angular_velocity_hip = calculate_angular_vel(prev_hip_angle, hip_angle, dt) 
             hip_ang_velocities.append(angular_velocity_hip)
         
+            # davet -- this seems wrong. list[-2] is the second to last eleement. 
+            # davet - That means you are calculating the acceleration using 2 delta time units but are only dividing by one. 
+            # davet - This is very untypical as you want the dt as small as possible since it is a discrete derivative.
+            # davet - changed to use list[-1], the last value
+
             if len(hip_ang_velocities) >= 2:
-                angular_accel_hip = calculate_angular_acceleration(hip_ang_velocities[-2], angular_velocity_hip, 1 / fps) 
+                angular_accel_hip = calculate_angular_acceleration(hip_ang_velocities[-1], angular_velocity_hip, dt) 
                 hip_ang_accelerations.append(angular_accel_hip)
                 
         prev_hip_landmark = hip_landmark
         prev_hip_angle = hip_angle
         
         # Knee Data Collection
-        if prev_knee_landmark is not None:
-            if fps != 0:  # Check if fps is not zero to avoid division by zero
-                time_difference = 1 / fps
-            else:
-                time_difference = 1
-                
-            linear_velocity_knee = calculate_linear_velx()
+        if prev_knee_landmark is not None:               
+            linear_velocity_knee = calculate_linear_velx(prev_knee_landmark.x, knee_landmark.x, dt) #davet - original missing params
             knee_lin_velocities.append(linear_velocity_knee)
                 
-            angular_velocity_knee = calculate_angular_vel(prev_knee_angle, knee_angle, 1 / fps)
+            angular_velocity_knee = calculate_angular_vel(prev_knee_angle, knee_angle, dt)
             knee_ang_velocities.append(angular_velocity_knee)
                 
+            # davet -- this seems wrong. list[-2] is the second to last eleement. 
+            # davet - That means you are calculating the acceleration using 2 delta time units but are only dividing by one. 
+            # davet - This is very untypical as you want the dt as small as possible since it is a discrete derivative.
+            # davet - changed to use list[-1], the last value
+
             if len(knee_ang_velocities) >= 2:
-                angular_accel_knee = calculate_angular_acceleration(knee_ang_velocities[-2], angular_velocity_knee, 1 / fps)
+                angular_accel_knee = calculate_angular_acceleration(knee_ang_velocities[-1], angular_velocity_knee, dt)
                 knee_ang_accelerations.append(angular_accel_knee)
                 
         prev_knee_landmark = knee_landmark
         prev_knee_angle = knee_angle
                 
         # Ankle Data Collection                
-        if prev_ankle_landmark is not None:
-            if fps != 0:  # Check if fps is not zero to avoid division by zero
-                time_difference = 1 / fps
-            else:
-                time_difference = 1
-                
-            linear_velocity_ankle = calculate_linear_velx()
+        if prev_ankle_landmark is not None:               
+            linear_velocity_ankle = calculate_linear_velx(prev_ankle_landmark.x, ankle_landmark.x, dt) # davet - original was missing params
             ankle_lin_velocities.append(linear_velocity_ankle)
                 
-            angular_velocity_ankle = calculate_angular_vel(prev_ankle_angle, ankle_angle, 1 / fps)
+            angular_velocity_ankle = calculate_angular_vel(prev_ankle_angle, ankle_angle, dt)
             ankle_ang_velocities.append(angular_velocity_ankle)
-                
+
+            # davet -- this seems wrong. list[-2] is the second to last eleement. 
+            # davet - That means you are calculating the acceleration using 2 delta time units but are only dividing by one. 
+            # davet - This is very untypical as you want the dt as small as possible since it is a discrete derivative.
+            # davet - changed to use list[-1], the last value
+
             if len(ankle_ang_velocities) >= 2:
-                angular_accel_ankle = calculate_angular_acceleration(ankle_ang_velocities[-2], angular_velocity_ankle, 1 / fps)
+                angular_accel_ankle = calculate_angular_acceleration(ankle_ang_velocities[-1], angular_velocity_ankle, dt)
                 ankle_ang_accelerations.append(angular_accel_ankle)
 
         prev_ankle_landmark = ankle_landmark
         prev_ankle_angle = ankle_angle
           
         # Toe Data Collection                
-        if prev_toe_landmark is not None:
-            if fps != 0:  # Check if fps is not zero to avoid division by zero
-                time_difference = 1 / fps
-            else:
-                time_difference = 1
-        
-            linear_velocity_toe = calculate_linear_velx()
+        if prev_toe_landmark is not None:       
+            linear_velocity_toe = calculate_linear_velx(prev_toe_landmark.x, toe_landmark.x, dt) # davet - original missing params
             toe_lin_velocities.append(linear_velocity_toe)
         
         prev_toe_landmark = toe_landmark
-            
-
-        
+             
 
         csv_writer.writerow([frame_count, foot_magnitude, shank_magnitude, thigh_magnitude, trunk_magnitude, None, None, ankle_angle, knee_angle, hip_angle, 
                              None, None, linear_velocity_hip, linear_velocity_knee, linear_velocity_toe, angular_velocity_hip, angular_velocity_knee, 
@@ -248,8 +247,8 @@ while cap.isOpened():
 
         # Display live measurements on the frame with color-coded font
         font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.5
-        font_thickness = 1
+        font_scale = 1.0 # davet original was 0.5
+        font_thickness = 3 # davet original was 1
 
         # Define colors corresponding to each measurement
         color_hip_angle = (255, 0, 0)  # Red
@@ -259,15 +258,18 @@ while cap.isOpened():
         color_shank_magnitude = (0, 255, 0)  # Green
         color_foot_magnitude = (0, 255, 0)  # Green
 
+        # davet - making all the text black seems more readable to me
+        # davet - the line spacing had lines overlapping one another. Fixed.
+
+        color_hip_angle = color_knee_angle = color_ankle_angle = color_thigh_magnitude = color_shank_magnitude = color_foot_magnitude = (0,0,0) # black
 
         # Display live measurements on the frame
         cv2.putText(frame, f'Foot Length: {foot_magnitude:.2f}', (10, 30), font, font_scale, color_foot_magnitude, font_thickness)
-        cv2.putText(frame, f'Shank Length: {shank_magnitude:.2f}', (10, 120), font, font_scale, color_shank_magnitude, font_thickness)
-        cv2.putText(frame, f'Thigh Length: {thigh_magnitude:.2f}', (10, 120), font, font_scale, color_thigh_magnitude, font_thickness)
-        cv2.putText(frame, f'Knee Joint Angle: {knee_angle:.2f} degrees', (10, 270), font, font_scale, color_knee_angle, font_thickness)
-        cv2.putText(frame, f'Hip Joint Angle: {hip_angle:.2f} degrees', (10, 60), font, font_scale, color_hip_angle, font_thickness)
-        cv2.putText(frame, f'Ankle Joint Angle: {ankle_angle:.2f} degrees', (10, 90), font, font_scale, color_ankle_angle, font_thickness)
-
+        cv2.putText(frame, f'Shank Length: {shank_magnitude:.2f}', (10, 60), font, font_scale, color_shank_magnitude, font_thickness)
+        cv2.putText(frame, f'Thigh Length: {thigh_magnitude:.2f}', (10, 90), font, font_scale, color_thigh_magnitude, font_thickness)
+        cv2.putText(frame, f'Knee Joint Angle: {knee_angle:.2f} degrees', (10, 120), font, font_scale, color_knee_angle, font_thickness)
+        cv2.putText(frame, f'Hip Joint Angle: {hip_angle:.2f} degrees', (10, 150), font, font_scale, color_hip_angle, font_thickness)
+        cv2.putText(frame, f'Ankle Joint Angle: {ankle_angle:.2f} degrees', (10, 180), font, font_scale, color_ankle_angle, font_thickness)
 
     # Write frame to the output video
     output_video.write(frame)
@@ -282,7 +284,7 @@ while cap.isOpened():
 # Calculate the difference between the max and min values of hip hinge and ankle angles
 max_hip_angle = max(hip_angles) 
 max_knee_angle = max(knee_angles)
-max_ankle_angle = max(ankle_angle) 
+max_ankle_angle = max(ankle_angles) # davet - original used ankle_angle 
 
 
 # Release resources

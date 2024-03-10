@@ -65,10 +65,10 @@ dt = 1/fps if fps else 1
 
 # Create a video writer to save the output
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output_video = cv2.VideoWriter('output_video_p22.mp4', fourcc, fps, (width, height))
+output_video = cv2.VideoWriter('davet-video.mp4', fourcc, fps, (width, height))
 
 # Create and open a CSV file for writing
-csv_file = open('pose_measurements_p22.csv', 'w', newline='')
+csv_file = open('davet-measurements.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow([
      'Frame', 
