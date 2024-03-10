@@ -72,7 +72,8 @@ csv_file = open('davet-measurements.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow([
      'Frame', 
-     'Foot Magnitude', 'Shank Magnitude', 'Thigh Magnitude', 'Trunk Magnitude', 
+     'Foot Magnitude', 'Shank Magnitude', 'Thigh Magnitude', 'Trunk Magnitude',
+     'Toe x pos', 'Ankle x pos', 'Knee x pos', 'Hip xpos',
      'Toe Angle', 'Ankle Angle', 'Knee Angle', 'Hip Angle',
      'Toe Linear Velocity', 'Ankle Linear Velocity', 'Knee Linear Velocity', 'Hip Linear Velocity',
      'Toe Angular Velocity', 'Ankle Angular Velocity', 'Knee Angular Velocity', 'Hip Angular Velocity',
@@ -141,7 +142,8 @@ while cap.isOpened():
           
         csv_writer.writerow([
             frame_count, 
-            foot_magnitude, shank_magnitude, thigh_magnitude, trunk_magnitude, 
+            foot_magnitude, shank_magnitude, thigh_magnitude, trunk_magnitude,
+            toe.curr.x, ankle.curr.x, knee.curr.x, hip.curr.x, 
             toe.angle, ankle.angle, knee.angle, hip.angle,
             toe.linear_velocity, ankle.linear_velocity, knee.linear_velocity, hip.linear_velocity,
             toe.angular_velocity, ankle.angular_velocity, knee.angular_velocity, hip.angular_velocity,
